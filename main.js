@@ -44,6 +44,19 @@ var makeDietChecker = function(restriction){
 	};
 };
 
+var createDrinkOrPlate = function() {
+  var $plate = $('<p class="highlight">' + this + '</p>');
+	$plate.attr("data-price", this.price);
+
+	if ((!this.isVegan() && theCustomer.dietaryPreference.vegan) ||
+			(!this.isGlutenFree() && theCustomer.dietaryPreference.glutenFree) ||
+			(!this.isCitrusFree() && theCustomer.dietaryPreference.citrusFree)) {
+		$plate.removeClass("highlight");
+	}
+
+	return $plate;
+};
+
 var Drink = function(name, description, price, ingredients){
 	this.name = name;
 	this.description = description;
@@ -53,9 +66,11 @@ var Drink = function(name, description, price, ingredients){
 
 Drink.prototype.toString = drinkOrPlateToString;
 
-Drink.prototype.create = function() {
-  return $('<p>' + this + '</p>');
-}
+Drink.prototype.isVegan = makeDietChecker('vegan');
+Drink.prototype.isGlutenFree = makeDietChecker('glutenFree');
+Drink.prototype.isCitrusFree = makeDietChecker('citrusFree');
+
+Drink.prototype.create = createDrinkOrPlate;
 
 var Plate = function(name, description, price, ingredients){
 	this.name = name;
@@ -70,9 +85,7 @@ Plate.prototype.isVegan = makeDietChecker('vegan');
 Plate.prototype.isGlutenFree = makeDietChecker('glutenFree');
 Plate.prototype.isCitrusFree = makeDietChecker('citrusFree');
 
-Plate.prototype.create = function() {
-  return $('<p>' + this + '</p>');
-};
+Plate.prototype.create = createDrinkOrPlate;
 
 //
 // Order
@@ -102,10 +115,16 @@ Order.prototype.toString = function(){
 };
 
 Order.prototype.create = function() {
-	var $order = $('<div></div>');
+	var $order = $('<div><h2>Your Order</h2><p>Total: $<span id="order-total">0.00</span></p></div>');
+	$order.attr("data-total", 0);
 
 	$('.plates').on('click', 'p', function() {
-		$order.append($(this).clone());
+		if (confirm("Do you want to add this item to your order?")) {
+			$order.attr("data-total", parseFloat($(this).attr("data-price")) +
+				parseFloat($order.attr("data-total")));
+			$('#order-total').text($order.attr("data-total"));
+			$order.append($(this).clone());
+		}
 	});
 
 	return $order;
@@ -191,6 +210,8 @@ var margarita = new Drink('margarita', 'This is a lovely mixed drink.', 5.50, [t
 var firstOrder = new Order([burritoPlate, margarita, burritoPlate, guacamolePlate, margarita]);
 var mainMenu = new Menu([burritoPlate, guacamolePlate, margarita]);
 var restaurant = new Restaurant("Pica's Taqueria", 'A Mexican American Joint', mainMenu);
+
+var theCustomer = new Customer({ vegan: true, glutenFree: true, citrusFree: false });
 
 //
 // Page setup
